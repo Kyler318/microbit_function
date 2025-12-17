@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Micro:bit 函數大冒險 v2.1</title>
+    <title>Micro:bit 函數魔法教室 v3.4 (完美修復版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://bernardo-castilho.github.io/DragDropTouch/DragDropTouch.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Consolas&display=swap');
@@ -14,115 +13,147 @@
         body {
             font-family: 'Noto Sans TC', sans-serif;
             background-color: #f0f9ff;
-            touch-action: none; /* 防止手機上下滑動干擾拖曳 */
+            touch-action: none;
         }
 
         /* --- 原有教學樣式 --- */
-        .step-active {
-            border-bottom: 3px solid #3B82F6;
-            color: #1D4ED8;
-            font-weight: bold;
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
+        .step-active { border-bottom: 3px solid #3B82F6; color: #1D4ED8; font-weight: bold; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* --- 遊戲專用樣式 (Game CSS) --- */
+        /* --- 遊戲專用 CSS --- */
         :root {
             --block-event: #993399; 
             --block-func: #1b2c45;  
             --block-call: #2c3e50;  
-            --block-loop: #00b848;  
-            --block-logic: #00a4a6; 
-            --block-action: #d35400;
+            --block-loop: #16a34a;  
+            --block-logic: #0891b2; 
+            --block-action: #d97706;
         }
 
+        .game-wrapper {
+            display: flex; flex-direction: column; height: 700px;
+            background: white; border: 1px solid #e2e8f0; border-radius: 12px;
+            overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .game-header {
+            padding: 12px 16px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;
+            display: flex; justify-content: space-between; align-items: center; height: 60px;
+        }
+
+        .game-body { display: flex; flex: 1; overflow: hidden; position: relative; }
+
+        /* 左側：舞台區 */
+        .stage-area {
+            flex: 4; background: #f1f5f9; padding: 16px;
+            display: flex; flex-direction: column; border-right: 1px solid #e2e8f0; 
+            position: relative; overflow: hidden;
+        }
+
+        .mission-card {
+            background: white; padding: 10px 14px; border-radius: 8px;
+            border-left: 4px solid #f59e0b; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            margin-bottom: 12px; font-size: 0.95rem; line-height: 1.5; z-index: 20;
+        }
+
+        #canvas {
+            flex: 1; 
+            background: white; 
+            border-radius: 8px; 
+            border: 2px solid #cbd5e1;
+            position: relative !important;
+            overflow: hidden !important; 
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px); 
+            background-size: 20px 20px;
+            z-index: 0;
+        }
+
+        /* 右側：程式區 */
+        .code-area {
+            flex: 6; display: flex; flex-direction: column; background: white; position: relative;
+        }
+
+        #toolbox {
+            padding: 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+            display: flex; flex-wrap: wrap; gap: 8px;
+            align-content: flex-start;
+            min-height: 80px; max-height: 150px; overflow-y: auto;
+        }
+
+        #workspace {
+            flex: 1; padding: 20px; background-color: #ffffff; 
+            overflow-y: auto; position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* --- 積木樣式 --- */
         .game-block {
-            padding: 8px 12px; /* 加大一點方便觸控 */
-            margin: 4px 0;
-            color: white;
-            font-family: 'Consolas', monospace;
-            font-size: 14px;
-            border-radius: 6px;
-            cursor: grab;
-            display: inline-block;
-            box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
-            position: relative;
-            border: 1px solid rgba(255,255,255,0.3);
-            user-select: none;
-            z-index: 10;
-            touch-action: none;
+            padding: 6px 10px; margin: 4px 0; color: white;
+            font-family: 'Consolas', monospace; font-size: 13px; font-weight: 600;
+            border-radius: 6px; cursor: grab;
+            display: inline-flex; flex-direction: column; align-items: flex-start;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.2);
+            user-select: none; z-index: 10; width: fit-content;
+            transition: transform 0.1s;
         }
         .game-block:active { transform: scale(0.98); cursor: grabbing; }
 
-        .block-event { background: var(--block-event); border-radius: 12px 12px 4px 4px; display:block; width: fit-content; margin-top: 10px;}
-        .block-func { background: var(--block-func); display:block; width: fit-content; margin-bottom: 8px;}
-        .block-call { background: var(--block-call); }
-        .block-loop { background: var(--block-loop); border-radius: 4px 12px 4px 4px; display:block; width: fit-content;}
-        .block-logic { background: var(--block-logic); border-radius: 4px; display:block; width: fit-content; }
-        .block-action { background: var(--block-action); }
+        .block-header { display: flex; align-items: center; pointer-events: none; white-space: nowrap;}
+        
+        .block-event { background: var(--block-event); border-radius: 8px 8px 4px 4px; margin-top: 10px;}
+        .block-func { background: var(--block-func); margin-bottom: 10px; border: 2px solid #fbbf24;}
+        .block-call { background: var(--block-call); flex-direction: row;}
+        .block-loop { background: var(--block-loop); border-radius: 4px 12px 4px 4px;}
+        .block-logic { background: var(--block-logic); border-radius: 4px;}
+        .block-action { background: var(--block-action); flex-direction: row;}
 
         .game-slot {
-            background: rgba(0,0,0,0.08);
-            min-height: 44px; /* 加高讓手指容易放入 */
-            margin: 4px 0 4px 8px;
-            border-left: 3px solid rgba(0,0,0,0.1);
-            border-radius: 6px;
-            padding: 8px 6px;
-            min-width: 140px;
+            background: rgba(0,0,0,0.05); min-height: 40px;
+            margin: 4px 0 4px 12px; border-left: 3px solid rgba(0,0,0,0.1);
+            border-radius: 4px; padding: 4px; min-width: 140px; width: 95%; 
             transition: all 0.2s;
         }
-        
-        /* 拖曳時的感應樣式 */
-        .game-slot.drag-over {
-            background: #bbf7d0; 
-            border: 2px dashed #16a34a;
-            transform: scale(1.02);
+        .game-slot.drag-over { background: #bbf7d0; border: 2px dashed #16a34a; }
+
+        .sprite { 
+            position: absolute !important; 
+            transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1), top 0.5s ease; 
+            width: 60px; height: 60px;
+            z-index: 10;
         }
-
-        .tag { display: inline-block; background: #eceff1; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; color: #455a64; border: 1px solid #cfd8dc; font-size: 0.85em; }
-
-        /* Game Sprites */
-        .sprite { position: absolute; transition: left 0.5s ease, top 0.5s ease; }
-        .robot-svg { width: 80px; height: 80px; z-index: 20; transition: all 0.3s; }
-        .target-svg { width: 60px; height: 60px; z-index: 10; bottom: 50px; transition: all 0.3s; }
         
+        .target-svg { display: flex; justify-content: center; align-items: center; }
         .target-svg.broken { filter: grayscale(100%) brightness(0.8); }
         .target-svg.red-alert { filter: sepia(100%) hue-rotate(-50deg) saturate(300%); }
-        .target-svg.fixed { filter: grayscale(0%) drop-shadow(0 0 10px #00e676); transform: scale(1.1); }
-        .target-svg.shield { filter: drop-shadow(0 0 5px #0277bd); }
-
+        .target-svg.fixed { 
+            filter: grayscale(0%) drop-shadow(0 0 10px #22c55e); 
+            transform: scale(1.1);
+            transform-origin: center bottom;
+        }
+        .target-svg.shield { filter: drop-shadow(0 0 5px #0ea5e9); }
+        
         .beam {
-            position: absolute; height: 6px; background: #00e676;
-            border-radius: 4px; z-index: 15; opacity: 0;
+            position: absolute; height: 6px; background: #22c55e;
+            border-radius: 3px; z-index: 50; opacity: 0;
             transform-origin: left center;
-            box-shadow: 0 0 15px #00e676;
+            box-shadow: 0 0 8px #22c55e;
             pointer-events: none;
+            transition: opacity 0.1s;
         }
 
-        .particle {
-            position: absolute; width: 6px; height: 6px; border-radius: 50%;
-            pointer-events: none; z-index: 30;
-        }
-
-        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake {
-            10%, 90% { transform: translate3d(-2px, 0, 0); }
-            20%, 80% { transform: translate3d(4px, 0, 0); }
-            30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
-            40%, 60% { transform: translate3d(6px, 0, 0); }
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
         }
+        .shake { animation: shake 0.4s ease-in-out; }
 
-        /* Tutorial specific overrides */
-        .code-block-demo {
-            padding: 4px 8px; border-radius: 4px; color: white; font-weight: bold; font-family: monospace; display: inline-block;
-        }
+        .tag { display: inline-block; background: #f1f5f9; color: #475569; padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 0.9em; border: 1px solid #cbd5e1; }
+        .code-block-demo { padding: 4px 8px; border-radius: 4px; color: white; font-weight: bold; font-family: monospace; display: inline-block; }
     </style>
 </head>
 <body class="flex flex-col min-h-screen text-slate-800">
@@ -133,18 +164,13 @@
                 <i data-lucide="cpu" class="text-blue-600"></i>
                 <h1 class="text-xl font-bold text-slate-800">Micro:bit 函數魔法教室</h1>
             </div>
-            <div class="text-sm text-slate-500 hidden md:block">互動式教學系統 v2.1</div>
+            <div class="text-sm text-slate-500 hidden md:block">互動式教學系統 v3.4</div>
         </div>
     </nav>
 
     <main class="flex-grow p-4 md:p-8 max-w-5xl mx-auto w-full">
-        
-        <div class="flex justify-between mb-8 overflow-x-auto pb-2" id="progressBar">
-            </div>
-
-        <div id="contentArea" class="bg-white rounded-2xl shadow-xl p-6 md:p-10 min-h-[600px] relative fade-in">
-            </div>
-
+        <div class="flex justify-between mb-8 overflow-x-auto pb-2" id="progressBar"></div>
+        <div id="contentArea" class="bg-white rounded-2xl shadow-xl p-6 md:p-10 min-h-[600px] relative fade-in"></div>
         <div class="flex justify-between mt-6 max-w-5xl mx-auto">
             <button id="prevBtn" onclick="changeStep(-1)" class="px-6 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg font-semibold text-slate-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
                 <i data-lucide="arrow-left" class="inline w-4 h-4 mb-1"></i> 上一步
@@ -160,279 +186,174 @@
     </footer>
 
     <script>
-        // --- 簡易音效合成器 ---
+        // --- 音效系統 ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
         function playSound(type) {
-            // 用戶互動後才能恢復 AudioContext
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-
             const now = audioCtx.currentTime;
-            
-            if (type === 'success') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587, now); // D5
-                osc.frequency.setValueAtTime(1175, now + 0.1); // D6
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now);
-                osc.stop(now + 0.3);
-            } else if (type === 'fail') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, now);
-                osc.frequency.linearRampToValueAtTime(100, now + 0.3);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now);
-                osc.stop(now + 0.3);
-            } else if (type === 'click') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(800, now);
-                gain.gain.setValueAtTime(0.05, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-                osc.start(now);
-                osc.stop(now + 0.05);
+
+            if (type === 'click') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(600, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
             } else if (type === 'laser') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(800, now);
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(800, now);
                 osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
-                gain.gain.setValueAtTime(0.05, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                osc.start(now);
-                osc.stop(now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'success') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(500, now);
+                osc.frequency.setValueAtTime(1000, now + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+            } else if (type === 'fail') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.4);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
             }
         }
 
-        // --- Data & Content ---
+        // --- Data & Render ---
         const tutorialSteps = [
             {
-                id: "intro",
-                title: "1. 為什麼要學函數？",
-                icon: "help-circle",
+                id: "intro", title: "1. 為什麼學函數？", icon: "help-circle",
                 render: () => `
                     <div class="space-y-6 text-center">
                         <h2 class="text-3xl font-bold text-blue-700">你有遇過這種麻煩嗎？</h2>
-                        <p class="text-lg text-slate-600">想像一下，你要讓 Micro:bit 閃爍愛心三次，你會怎麼寫程式？</p>
-                        
+                        <p class="text-lg text-slate-600">如果要讓 Micro:bit 閃爍愛心三次，你會怎麼寫程式？</p>
                         <div class="grid md:grid-cols-2 gap-8 items-center mt-8">
                             <div class="bg-red-50 p-4 rounded-xl border-2 border-red-200">
                                 <h3 class="font-bold text-red-600 mb-2">❌ 沒用函數 (累死人寫法)</h3>
                                 <div class="text-left text-xs space-y-1 opacity-70">
                                     <div class="code-block-demo bg-emerald-500">顯示圖示 ❤️</div>
                                     <div class="code-block-demo bg-emerald-500">暫停 500ms</div>
-                                    <div class="code-block-demo bg-emerald-500">清空螢幕</div>
-                                    <div class="code-block-demo bg-emerald-500">暫停 500ms</div>
                                     <div class="code-block-demo bg-emerald-500">顯示圖示 ❤️</div>
-                                    <div class="code-block-demo bg-emerald-500">...還有好多行</div>
+                                    <div class="code-block-demo bg-emerald-500">...複製貼上好多次</div>
                                 </div>
-                                <p class="mt-4 text-sm text-red-500">程式碼超長，如果要改時間，每一行都要改！</p>
+                                <p class="mt-4 text-sm text-red-500">程式碼超長，修改很麻煩！</p>
                             </div>
-
                             <div class="bg-green-50 p-4 rounded-xl border-2 border-green-200">
                                 <h3 class="font-bold text-green-600 mb-2">✅ 使用函數 (聰明寫法)</h3>
                                 <div class="text-left text-xs space-y-1">
-                                    <div class="code-block-demo bg-blue-800">建立函數 "閃爍愛心"</div>
-                                    <div class="ml-4 p-2 bg-blue-100 rounded">
-                                         <div class="code-block-demo bg-emerald-500">顯示圖示 ❤️</div>
-                                         <div class="code-block-demo bg-emerald-500">暫停 500ms</div>
-                                         <div class="code-block-demo bg-emerald-500">清空螢幕</div>
-                                    </div>
+                                    <div class="code-block-demo bg-blue-800">建立函數 "閃爍"</div>
+                                    <div class="ml-4 p-2 bg-blue-100 rounded"><div class="code-block-demo bg-emerald-500">顯示圖示...</div></div>
                                     <div class="mt-4 code-block-demo bg-green-500">重複 3 次</div>
-                                    <div class="ml-4 p-2 bg-green-100 rounded">
-                                        <div class="code-block-demo bg-blue-800">呼叫 "閃爍愛心"</div>
-                                    </div>
+                                    <div class="ml-4 p-2 bg-green-100 rounded"><div class="code-block-demo bg-blue-800">呼叫 "閃爍"</div></div>
                                 </div>
-                                <p class="mt-4 text-sm text-green-600">定義一次，隨時呼叫！程式碼乾淨又好改。</p>
+                                <p class="mt-4 text-sm text-green-600">定義一次，隨時呼叫！</p>
                             </div>
                         </div>
-                    </div>
-                `
+                    </div>`
             },
             {
-                id: "concept",
-                title: "2. 函數是什麼？",
-                icon: "book-open",
+                id: "concept", title: "2. 函數是什麼？", icon: "book-open",
                 render: () => `
                     <div class="space-y-6">
-                        <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                            <i data-lucide="package" class="text-purple-500"></i> 函數 (Function) 的概念
-                        </h2>
-                        
+                        <h2 class="text-2xl font-bold text-slate-800"><i data-lucide="package" class="inline text-purple-500"></i> 函數 (Function) 的概念</h2>
                         <div class="bg-blue-50 p-6 rounded-xl border-l-4 border-blue-500">
-                            <p class="text-lg leading-relaxed">
-                                <strong>函數</strong>就像是一個<strong>「打包好的魔法箱子」</strong>。
-                                <br>你把一堆指令放進箱子裡，給箱子貼上一個標籤（名字）。
-                                <br>之後只要叫這個名字，箱子裡的指令就會自動執行！
-                            </p>
+                            <p class="text-lg"><strong>函數</strong>就像是一個<strong>「打包好的魔法箱子」</strong>。<br>你把一堆指令放進去，給它一個名字，之後只要叫這個名字，裡面的指令就會自動執行！</p>
                         </div>
-
                         <div class="grid md:grid-cols-2 gap-6 mt-6">
-                            <div class="bg-white border rounded-lg p-4 shadow-sm">
-                                <h3 class="font-bold text-lg mb-2">特點 1：打包指令</h3>
-                                <p class="text-slate-600">將複雜的動作（如：前進、左轉、跳躍）組合成一個新動作（如：大絕招）。</p>
-                            </div>
-                            <div class="bg-white border rounded-lg p-4 shadow-sm">
-                                <h3 class="font-bold text-lg mb-2">特點 2：重複使用</h3>
-                                <p class="text-slate-600">寫好一次，可以在程式的任何地方呼叫它 100 次，不用重寫。</p>
-                            </div>
-                            <div class="bg-white border rounded-lg p-4 shadow-sm">
-                                <h3 class="font-bold text-lg mb-2">特點 3：容易修改</h3>
-                                <p class="text-slate-600">如果要修改動作，只要改函數裡面的內容，所有呼叫的地方都會自動更新。</p>
-                            </div>
+                            <div class="bg-white border rounded p-4"><h3 class="font-bold">特點 1：打包指令</h3><p>將複雜動作組合成一個新動作。</p></div>
+                            <div class="bg-white border rounded p-4"><h3 class="font-bold">特點 2：重複使用</h3><p>寫一次，可以呼叫 100 次。</p></div>
                         </div>
-                    </div>
-                `
+                    </div>`
             },
             {
-                id: "flow",
-                title: "3. 運作流程",
-                icon: "activity",
+                id: "flow", title: "3. 運作流程", icon: "activity",
                 render: () => `
-                     <div class="space-y-6">
+                    <div class="space-y-6">
                         <h2 class="text-2xl font-bold text-slate-800">程式是怎麼跑的？</h2>
-                        <p class="text-slate-600">當主程式遇到「呼叫函數」積木時，會暫時跳去執行函數內的內容，做完再回來。</p>
-
-                        <div class="bg-slate-800 p-6 rounded-xl text-white relative overflow-hidden">
+                        <div class="bg-slate-800 p-6 rounded-xl text-white">
                             <div class="grid grid-cols-2 gap-8">
                                 <div class="border border-slate-600 p-4 rounded bg-slate-700/50" id="mainProgramArea">
-                                    <h4 class="text-sm text-slate-400 mb-2">當啟動時 (主程式)</h4>
-                                    <div id="step1" class="code-block-demo bg-green-500 w-full mb-2 opacity-30">1. 顯示文字 "Start"</div>
-                                    <div id="step2" class="code-block-demo bg-blue-900 w-full mb-2 opacity-30">2. 呼叫函數 "笑臉"</div>
-                                    <div id="step4" class="code-block-demo bg-green-500 w-full opacity-30">3. 顯示文字 "End"</div>
+                                    <h4 class="text-sm text-slate-400 mb-2">主程式</h4>
+                                    <div id="step1" class="code-block-demo bg-green-500 w-full mb-2 opacity-30">1. Start</div>
+                                    <div id="step2" class="code-block-demo bg-blue-900 w-full mb-2 opacity-30">2. 呼叫 "笑臉"</div>
+                                    <div id="step4" class="code-block-demo bg-green-500 w-full opacity-30">3. End</div>
                                 </div>
-
                                 <div class="border border-slate-600 p-4 rounded bg-slate-700/50" id="funcDefArea">
                                     <h4 class="text-sm text-slate-400 mb-2">函數 "笑臉"</h4>
                                     <div class="p-2 border border-dashed border-blue-400 rounded">
                                         <div id="step3a" class="code-block-demo bg-emerald-500 w-full mb-2 opacity-30">LED 顯示 :)</div>
-                                        <div id="step3b" class="code-block-demo bg-emerald-500 w-full opacity-30">播放音效 BEEP</div>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="mt-6 flex items-center justify-between bg-slate-900 p-3 rounded-lg">
+                            <div class="mt-6 flex justify-between items-center">
                                 <div id="flowStatus" class="text-yellow-400 font-mono">準備執行...</div>
-                                <button onclick="runFlowSimulation()" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded font-bold flex items-center gap-2">
-                                    <i data-lucide="play"></i> 執行流程
-                                </button>
+                                <button onclick="runFlowSimulation()" class="px-4 py-2 bg-green-600 rounded font-bold"><i data-lucide="play" class="inline"></i> 執行</button>
                             </div>
                         </div>
-                    </div>
-                `
+                    </div>`
             },
             {
-                id: "life",
-                title: "4. 生活中的應用",
-                icon: "coffee",
+                id: "life", title: "4. 生活中的應用", icon: "coffee",
                 render: () => `
                     <div class="space-y-6">
-                        <h2 class="text-2xl font-bold text-slate-800">生活中的函數無處不在</h2>
-                        <p class="text-slate-600">其實我們生活中早就習慣使用「函數」的概念了，只是我們沒發現！</p>
-
-                        <div class="grid md:grid-cols-3 gap-6 mt-4">
-                            <div class="bg-white rounded-xl shadow-lg overflow-hidden transform hover:-translate-y-1 transition duration-300">
-                                <div class="bg-indigo-100 p-6 flex justify-center">
-                                    <i data-lucide="music" class="w-16 h-16 text-indigo-500"></i>
-                                </div>
-                                <div class="p-6">
-                                    <h3 class="font-bold text-lg mb-2">流行歌曲的「副歌」</h3>
-                                    <p class="text-sm text-slate-600">
-                                        作曲家不會把副歌的歌詞和旋律重寫三遍。他們會寫一次副歌段落，然後在樂譜上標記「回到副歌 (Chorus)」。
-                                    </p>
-                                    <div class="mt-4 text-xs font-mono bg-slate-100 p-2 rounded text-slate-500">
-                                        主歌1 -> <span class="text-blue-600 font-bold">呼叫副歌</span> -> 主歌2 -> <span class="text-blue-600 font-bold">呼叫副歌</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="bg-white rounded-xl shadow-lg overflow-hidden transform hover:-translate-y-1 transition duration-300">
-                                <div class="bg-sky-100 p-6 flex justify-center">
-                                    <i data-lucide="shirt" class="w-16 h-16 text-sky-500"></i>
-                                </div>
-                                <div class="p-6">
-                                    <h3 class="font-bold text-lg mb-2">洗衣機的「快洗模式」</h3>
-                                    <p class="text-sm text-slate-600">
-                                        你不用每次都手動設定：放水->轉動5分->排水->脫水。
-                                        你只需要按下一顆按鈕（呼叫函數），洗衣機就會自動執行那一整套設定好的流程。
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="bg-white rounded-xl shadow-lg overflow-hidden transform hover:-translate-y-1 transition duration-300">
-                                <div class="bg-orange-100 p-6 flex justify-center">
-                                    <i data-lucide="utensils" class="w-16 h-16 text-orange-500"></i>
-                                </div>
-                                <div class="p-6">
-                                    <h3 class="font-bold text-lg mb-2">速食店「1號餐」</h3>
-                                    <p class="text-sm text-slate-600">
-                                        你跟店員說「我要1號餐」，而不是說「我要一個漢堡、一份中薯、一杯可樂」。
-                                        「1號餐」就是一個函數名稱，包含了一組食物。
-                                    </p>
-                                </div>
-                            </div>
+                        <h2 class="text-2xl font-bold text-slate-800">生活中的函數</h2>
+                        <div class="grid md:grid-cols-3 gap-6">
+                            <div class="bg-white p-6 shadow rounded-xl"><i data-lucide="music" class="text-indigo-500 mb-2"></i><h3 class="font-bold">副歌 (Chorus)</h3><p>譜上寫「回到副歌」，不用重寫音符。</p></div>
+                            <div class="bg-white p-6 shadow rounded-xl"><i data-lucide="shirt" class="text-sky-500 mb-2"></i><h3 class="font-bold">洗衣模式</h3><p>按一顆按鈕，自動執行「浸泡+洗滌+脫水」。</p></div>
+                            <div class="bg-white p-6 shadow rounded-xl"><i data-lucide="utensils" class="text-orange-500 mb-2"></i><h3 class="font-bold">速食店套餐</h3><p>說「1號餐」，不用說「漢堡+薯條+可樂」。</p></div>
                         </div>
-                    </div>
-                `
+                    </div>`
             },
             {
-                id: "practice",
-                title: "5. 邏輯工程師挑戰",
-                icon: "gamepad-2",
+                id: "practice", title: "5. 邏輯工程師挑戰", icon: "gamepad-2",
                 render: () => `
-                    <div class="game-wrapper h-[600px] flex flex-col border-2 border-slate-200 rounded-xl overflow-hidden shadow-lg font-sans">
-                        <div class="bg-white p-4 flex justify-between items-center border-b border-slate-100">
+                    <div class="game-wrapper font-sans">
+                        <div class="game-header">
                              <div class="font-bold text-slate-700 text-lg flex gap-2 items-center">
-                                <i data-lucide="gamepad-2" class="text-purple-500"></i> 邏輯工程師訓練
+                                <i data-lucide="gamepad-2" class="text-purple-600"></i> 邏輯訓練
                              </div>
                              <div id="game-level-display" class="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow">Level 1</div>
                         </div>
                         
-                        <div class="flex flex-1 overflow-hidden bg-slate-50">
-                            <div class="flex-[1.4] p-4 flex flex-col border-r border-slate-200 bg-slate-100">
-                                 <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-orange-400 mb-4">
+                        <div class="game-body">
+                            <div class="stage-area">
+                                 <div class="mission-card">
                                     <div class="text-xs font-bold text-slate-400 uppercase mb-1 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> 當前任務</div>
                                     <div id="mission-text" class="text-slate-700 font-medium leading-relaxed">Loading...</div>
                                  </div>
-                                 <div id="canvas" class="flex-1 bg-white rounded-xl border-2 border-slate-200 relative overflow-hidden shadow-inner">
-                                    <svg class="sprite robot-svg" id="robot" viewBox="0 0 100 100" style="left: 50px; bottom: 50px;">
+                                 <div id="canvas">
+                                    <svg class="sprite robot-svg" id="robot" viewBox="0 0 100 100" style="left: 20px; top: 320px; z-index: 20;">
                                         <circle cx="50" cy="50" r="45" fill="#cfd8dc" stroke="#37474f" stroke-width="2"/>
                                         <rect x="25" y="35" width="50" height="30" rx="5" fill="#37474f"/>
-                                        <circle class="eye" cx="38" cy="50" r="5" fill="#00e676"/>
-                                        <circle class="eye" cx="62" cy="50" r="5" fill="#00e676"/>
+                                        <circle class="eye" cx="38" cy="50" r="5" fill="#22c55e"/>
+                                        <circle class="eye" cx="62" cy="50" r="5" fill="#22c55e"/>
                                         <rect x="40" y="80" width="20" height="15" fill="#546e7a"/>
-                                        <path d="M15 50 L5 40 M85 50 L95 40" stroke="#37474f" stroke-width="4" stroke-linecap="round"/>
+                                        <path d="M50 20 L50 5" stroke="#37474f" stroke-width="2"/>
+                                        <circle cx="50" cy="5" r="3" fill="#ef4444"/>
                                     </svg>
                                     <div class="beam" id="beam"></div>
                                  </div>
                             </div>
 
-                            <div class="flex-1 flex flex-col bg-white">
-                                <div id="toolbox" class="p-3 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-2 min-h-[80px] content-center">
-                                    </div>
-                                <div id="workspace" class="flex-1 p-6 overflow-y-auto bg-slate-50/50 relative">
-                                     <div class="text-center text-slate-300 mt-10 pointer-events-none select-none text-sm">☟ 拖放積木到這裡組合程式</div>
+                            <div class="code-area">
+                                <div id="toolbox"></div>
+                                <div id="workspace">
+                                     <div id="empty-hint" class="text-center text-slate-300 mt-20 pointer-events-none select-none text-sm">☟ 拖放積木到這裡組合程式</div>
                                 </div>
-                                <div class="p-4 border-t border-slate-100 flex items-center gap-2 bg-white shadow-up">
-                                    <div id="game-msg-box" class="flex-1 font-bold text-slate-500 text-sm truncate">等待指令...</div>
-                                    <button onclick="loadGameLevel(currentGameLevelIdx)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded text-slate-600 font-bold text-sm transition flex items-center gap-1 border border-slate-200">
-                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i> 重置
+                                <div class="p-4 border-t border-slate-100 flex items-center gap-2 bg-white">
+                                    <div id="game-msg-box" class="flex-1 font-bold text-slate-500 text-sm truncate">準備就緒</div>
+                                    <button onclick="loadGameLevel(currentGameLevelIdx)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded text-slate-600 font-bold text-sm transition border">
+                                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
                                     </button>
-                                    <button onclick="runGameCode()" class="px-4 py-2 bg-green-500 hover:bg-green-600 rounded text-white font-bold text-sm transition shadow-sm disabled:opacity-50 flex items-center gap-1 btn-run">
-                                        <i data-lucide="play" class="w-3 h-3"></i> 執行
+                                    <button onclick="runGameCode()" class="px-6 py-2 bg-green-500 hover:bg-green-600 rounded text-white font-bold text-sm shadow btn-run flex items-center gap-2">
+                                        <i data-lucide="play" class="w-4 h-4"></i> 執行
                                     </button>
-                                    <button id="btn-next-level" onclick="nextGameLevel()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white font-bold text-sm transition shadow-sm hidden animate-bounce flex items-center gap-1">
-                                        下一關 <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                                    <button id="btn-next-level" onclick="nextGameLevel()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white font-bold text-sm shadow hidden animate-bounce flex items-center gap-1">
+                                        下一關 <i data-lucide="arrow-right" class="w-4 h-4"></i>
                                     </button>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                `
+                    </div>`
             }
         ];
 
@@ -464,7 +385,6 @@
             lucide.createIcons();
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            // 如果是遊戲關卡，初始化遊戲
             if (tutorialSteps[index].id === 'practice') {
                 initGame();
             }
@@ -477,14 +397,13 @@
             }
         }
 
-        /* --- Flow Simulation (Step 3) --- */
+        /* --- Flow Simulation --- */
         async function runFlowSimulation() {
-            playSound('click'); // 播放音效
+            playSound('click');
             const els = {
                 step1: document.getElementById('step1'),
                 step2: document.getElementById('step2'),
                 step3a: document.getElementById('step3a'),
-                step3b: document.getElementById('step3b'),
                 step4: document.getElementById('step4'),
                 status: document.getElementById('flowStatus'),
                 mainArea: document.getElementById('mainProgramArea'),
@@ -493,8 +412,8 @@
 
             const reset = () => {
                 Object.values(els).forEach(el => {
-                    if(el.classList) el.classList.remove('ring-4', 'ring-yellow-400', 'opacity-100');
-                    if(el.classList && el.id && el.id.startsWith('step')) el.classList.add('opacity-30');
+                    if(el && el.classList) el.classList.remove('ring-4', 'ring-yellow-400', 'opacity-100');
+                    if(el && el.id && el.id.startsWith('step')) el.classList.add('opacity-30');
                 });
                 els.status.innerText = "準備執行...";
             };
@@ -520,10 +439,6 @@
             await new Promise(r => setTimeout(r, 1000));
             els.step3a.classList.remove('ring-2', 'ring-yellow-400');
 
-            highlight(els.step3b, "函數內: 執行 播放音效");
-            await new Promise(r => setTimeout(r, 1000));
-            els.step3b.classList.remove('ring-2', 'ring-yellow-400');
-
             els.funcArea.classList.remove('ring-2', 'ring-blue-500');
             els.mainArea.classList.remove('opacity-50');
             els.status.innerText = "函數結束，返回主程式";
@@ -533,33 +448,33 @@
             await new Promise(r => setTimeout(r, 1000));
             els.status.innerText = "程式執行完畢";
             els.step4.classList.remove('ring-2', 'ring-yellow-400');
-            playSound('success'); // 播放音效
+            playSound('success');
         }
 
-        /* --- Game Engine (Step 5) --- */
+        /* --- Game Engine (邏輯修正版) --- */
         const gameSVGs = {
-            server: `<svg viewBox="0 0 100 100"><rect x="15" y="10" width="70" height="80" rx="4" fill="#546e7a"/><rect x="25" y="20" width="50" height="10" rx="2" fill="#263238"/><circle cx="30" cy="25" r="2" fill="#ff1744" class="status-light"/><rect x="25" y="40" width="50" height="10" rx="2" fill="#263238"/><circle cx="30" cy="45" r="2" fill="#ff1744" class="status-light"/><rect x="25" y="60" width="50" height="10" rx="2" fill="#263238"/><circle cx="30" cy="65" r="2" fill="#ff1744" class="status-light"/></svg>`,
-            core: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#263238"/><circle cx="50" cy="50" r="20" fill="#ff1744"/><path d="M50 10 L50 30 M50 70 L50 90 M10 50 L30 50 M70 50 L90 50" stroke="#00e676" stroke-width="4"/></svg>`,
-            shield: `<svg viewBox="0 0 100 100"><path d="M50 10 L90 25 V55 C90 75 50 95 50 95 C50 95 10 75 10 55 V25 Z" fill="#37474f" stroke="#0277bd" stroke-width="3"/><text x="35" y="60" fill="white" font-size="40" font-weight="bold">!</text></svg>`
+            server: `<svg viewBox="0 0 100 100"><rect x="15" y="10" width="70" height="80" rx="4" fill="#64748b"/><rect x="25" y="20" width="50" height="10" rx="2" fill="#334155"/><circle cx="30" cy="25" r="2" fill="#ef4444" class="status-light"/><rect x="25" y="40" width="50" height="10" rx="2" fill="#334155"/><circle cx="30" cy="45" r="2" fill="#ef4444" class="status-light"/><rect x="25" y="60" width="50" height="10" rx="2" fill="#334155"/><circle cx="30" cy="65" r="2" fill="#ef4444" class="status-light"/></svg>`,
+            shield: `<svg viewBox="0 0 100 100"><path d="M50 10 L90 25 V55 C90 75 50 95 50 95 C50 95 10 75 10 55 V25 Z" fill="#475569" stroke="#0ea5e9" stroke-width="3"/><text x="35" y="65" fill="white" font-size="40" font-weight="bold">!</text></svg>`
         };
 
         const gameLevels = [
             {
                 id: 1, title: "L1: 定義工具",
-                desc: "定義一個 <span class='tag'>函數:修復</span>，放入 <span class='tag'>發射修復光束</span>。",
+                desc: "任務：定義一個 <span class='tag'>函數:修復</span>，裡面放入 <span class='tag'>動作:發射光束</span>。<br><span class='text-xs text-slate-500'>提示：把動作積木拖進函數積木裡。</span>",
                 targets: [{type: 'server', status: 'broken'}],
-                blocks: [{type: 'func', text: '函數: 修復', id: 'def-fix', isContainer: true}, {type: 'action', text: '發射修復光束', id: 'act-fix'}],
+                blocks: [{type: 'func', text: '函數: 修復', isContainer: true}, {type: 'action', text: '動作: 發射光束'}],
                 check: (ws) => {
                     const func = ws.querySelector('.block-func');
-                    if(!func || !func.querySelector('.block-action')) return {pass: false, msg: "請定義函數並放入修復動作！"};
+                    if(!func || !func.querySelector('.block-action')) return {pass: false, msg: "請把「動作」放入「函數」裡面！"};
                     return {pass: true, actions: [{type: 'fix', index: 0}]};
                 }
             },
             {
-                id: 2, title: "L2: 使用工具",
-                desc: "使用 <span class='tag'>當按鈕A按下</span> 事件，並 <span class='tag'>呼叫:修復</span>。",
+                id: 2, title: "L2: 呼叫函數",
+                desc: "任務：當 <span class='tag'>按鈕A</span> 按下時，<span class='tag'>呼叫:修復</span>。<br><span class='text-xs text-slate-500'>* 你建立的函數已經準備好了！直接呼叫它吧。</span>",
                 targets: [{type: 'server', status: 'broken'}],
-                blocks: [{type: 'event', text: '當按鈕 A 被按下', id: 'evt-a', isContainer: true}, {type: 'call', text: '呼叫: 修復', id: 'call-fix'}],
+                blocks: [{type: 'event', text: '當按鈕 A 被按下', isContainer: true}, {type: 'call', text: '呼叫: 修復'}],
+                preset: [{type: 'func', text: '函數: 修復', isContainer: true, children: [{type: 'action', text: '動作: 發射光束'}]}],
                 check: (ws) => {
                     const evt = ws.querySelector('.block-event');
                     if(!evt || !evt.querySelector('.block-call')) return {pass: false, msg: "請在事件內呼叫函數！"};
@@ -568,56 +483,91 @@
             },
             {
                 id: 3, title: "L3: 迴圈處理",
-                desc: "使用 <span class='tag'>重複 3 次</span> 迴圈來 <span class='tag'>呼叫:修復</span> 3 台伺服器。",
+                desc: "任務：有 3 台伺服器壞了！使用 <span class='tag'>重複 3 次</span> 來修復它們。",
                 targets: [{type: 'server', status: 'broken'}, {type: 'server', status: 'broken'}, {type: 'server', status: 'broken'}],
-                blocks: [{type: 'event', text: '當按鈕 A 被按下', id: 'evt-a', isContainer: true}, {type: 'loop', text: '重複 3 次', id: 'loop-3', isContainer: true}, {type: 'call', text: '呼叫: 修復', id: 'call-fix'}],
+                blocks: [{type: 'event', text: '當按鈕 A 被按下', isContainer: true}, {type: 'loop', text: '重複 3 次', isContainer: true}, {type: 'call', text: '呼叫: 修復'}],
+                preset: [{type: 'func', text: '函數: 修復', isContainer: true, children: [{type: 'action', text: '動作: 發射光束'}]}],
                 check: (ws) => {
                     const loop = ws.querySelector('.block-loop');
-                    if(!loop || !loop.querySelector('.block-call')) return {pass: false, msg: "請在迴圈內呼叫修復！"};
+                    if(!loop || !loop.querySelector('.block-call')) return {pass: false, msg: "記得把呼叫放入迴圈中！"};
                     return {pass: true, actions: [{type: 'fix', index: 0}, {type: 'fix', index: 1}, {type: 'fix', index: 2}]};
                 }
             },
             {
-                id: 4, title: "L4: 邏輯判斷",
-                desc: "只有壞掉的才修！紅色過熱的不要修。使用 <span class='tag'>如果 &lt;壞掉&gt; 則</span>。",
-                targets: [{type: 'server', status: 'broken'}, {type: 'server', status: 'red-alert'}, {type: 'server', status: 'broken'}],
-                blocks: [{type: 'event', text: '當按鈕 A 被按下', id: 'evt-a', isContainer: true}, {type: 'loop', text: '重複 3 次', id: 'loop-3', isContainer: true}, {type: 'logic', text: '如果 <伺服器壞掉> 則', id: 'if-broken', isContainer: true}, {type: 'call', text: '呼叫: 修復', id: 'call-fix'}, {type: 'action', text: '掃描', id: 'act-scan'}],
+                id: 4, title: "L4: 除錯 (Debug)",
+                desc: "⚠️ <b>程式有Bug！</b><br>機器人只修復了 1 台，但有 3 台。請修正工作區的程式碼！",
+                targets: [{type: 'server', status: 'broken'}, {type: 'server', status: 'broken'}, {type: 'server', status: 'broken'}],
+                blocks: [{type: 'loop', text: '重複 3 次', isContainer: true}, {type: 'call', text: '呼叫: 修復'}],
+                preset: [
+                    {type: 'func', text: '函數: 修復', isContainer: true, children: [{type: 'action', text: '動作: 發射光束'}]},
+                    {type: 'event', text: '當按鈕 A 被按下', isContainer: true, children: [{type: 'call', text: '呼叫: 修復'}]}
+                ],
                 check: (ws) => {
                     const loop = ws.querySelector('.block-loop');
-                    const logic = loop ? loop.querySelector('.block-logic') : null;
-                    const call = logic ? logic.querySelector('.block-call') : null;
-                    if(!logic) return {pass: false, msg: "請使用「如果」積木進行判斷！"};
-                    if(!call) return {pass: false, msg: "如果是壞掉的，才呼叫修復。"};
+                    if(!loop) return {pass: false, msg: "需要使用「重複」積木！"};
+                    if(!loop.querySelector('.block-call')) return {pass: false, msg: "迴圈要是空的就沒用囉！"};
+                    return {pass: true, actions: [{type: 'fix', index: 0}, {type: 'fix', index: 1}, {type: 'fix', index: 2}]};
+                }
+            },
+            {
+                id: 5, title: "L5: 邏輯判斷",
+                desc: "任務：只有 <span class='tag'>壞掉</span> 的才修！紅色過熱的不要碰。",
+                targets: [{type: 'server', status: 'broken'}, {type: 'server', status: 'red-alert'}, {type: 'server', status: 'broken'}],
+                blocks: [{type: 'event', text: '當按鈕 A 被按下', isContainer: true}, {type: 'loop', text: '重複 3 次', isContainer: true}, {type: 'logic', text: '如果 <伺服器壞掉> 則', isContainer: true}, {type: 'call', text: '呼叫: 修復'}, {type: 'action', text: '動作: 掃描'}],
+                preset: [{type: 'func', text: '函數: 修復', isContainer: true, children: [{type: 'action', text: '動作: 發射光束'}]}],
+                check: (ws) => {
+                    const logic = ws.querySelector('.block-logic');
+                    if(!logic) return {pass: false, msg: "請使用「如果」來判斷！"};
+                    if(!logic.querySelector('.block-call')) return {pass: false, msg: "如果壞掉，要執行什麼？"};
                     
                     let acts = [];
                     [0, 1, 2].forEach(i => {
                         acts.push({type: 'scan', index: i});
-                        if(gameLevels[3].targets[i].status === 'broken') acts.push({type: 'fix', index: i});
+                        if(gameLevels[4].targets[i].status === 'broken') acts.push({type: 'fix', index: i});
                     });
                     return {pass: true, actions: acts};
                 }
             },
             {
-                id: 5, title: "L5: 核心破解",
-                desc: "遇到 <span class='tag'>盾牌</span> 則 <span class='tag'>破解</span>，否則 <span class='tag'>修復</span>。",
-                targets: [{type: 'shield', status: 'shield'}, {type: 'core', status: 'broken'}, {type: 'shield', status: 'shield'}],
-                blocks: [{type: 'event', text: '當按鈕 A 被按下', id: 'evt-a', isContainer: true}, {type: 'loop', text: '重複 3 次', id: 'loop-3', isContainer: true}, {type: 'logic', text: '如果 <遇到盾牌> 則 / 否則', id: 'if-else', isContainer: true, hasElse: true}, {type: 'call', text: '呼叫: 破解', id: 'call-hack'}, {type: 'call', text: '呼叫: 修復', id: 'call-fix'}],
+                id: 6, title: "L6: 複合挑戰 (Hard)",
+                desc: "⚠️ <b>遇到盾牌->破解，遇到壞掉->修復，正常->掃描</b>。",
+                targets: [{type: 'shield', status: 'shield'}, {type: 'server', status: 'broken'}, {type: 'server', status: 'normal'}],
+                blocks: [
+                    {type: 'func', text: '函數: 破解', isContainer: true}, {type: 'action', text: '動作: 破解光束'},
+                    {type: 'event', text: '當按鈕 A 被按下', isContainer: true}, {type: 'loop', text: '重複 3 次', isContainer: true}, 
+                    {type: 'logic', text: '如果 <遇到盾牌> 則 / 否則', isContainer: true, hasElse: true}, {type: 'logic', text: '如果 <伺服器壞掉> 則', isContainer: true}, 
+                    {type: 'call', text: '呼叫: 破解'}, {type: 'call', text: '呼叫: 修復'}, {type: 'action', text: '動作: 掃描'}
+                ],
+                preset: [{type: 'func', text: '函數: 修復', isContainer: true, children: [{type: 'action', text: '動作: 發射光束'}]}],
                 check: (ws) => {
-                    const logic = ws.querySelector('.block-logic');
-                    const slots = logic ? logic.querySelectorAll('.game-slot') : [];
-                    
-                    if(slots.length < 2) return {pass: false, msg: "請使用 If/Else 積木 (必須包含否則)"};
-                    
-                    const slot1 = slots[0]; // If 部分
-                    const slot2 = slots[1]; // Else 部分
-                    
-                    const call1 = slot1.querySelector('.block-call');
-                    const call2 = slot2.querySelector('.block-call');
-
-                    if(call1 && call1.innerText.includes('破解') && call2 && call2.innerText.includes('修復')) {
-                        return {pass: true, actions: [{type: 'hack', index: 0}, {type: 'fix', index: 1}, {type: 'hack', index: 2}]};
-                    }
-                    return {pass: false, msg: "邏輯錯誤：遇到盾牌應該「破解」，否則應該「修復」。"};
+                    const text = ws.innerText;
+                    if(!text.includes('如果 <遇到盾牌>')) return {pass: false, msg: "缺少盾牌判斷"};
+                    if(!text.includes('破解')) return {pass: false, msg: "沒有執行破解"};
+                    if(!text.includes('修復')) return {pass: false, msg: "沒有執行修復"};
+                    return {pass: true, actions: [{type: 'hack', index: 0}, {type: 'fix', index: 1}, {type: 'scan', index: 2}]};
+                }
+            },
+            {
+                id: 7, title: "L7: 邏輯全錯了 (Expert)",
+                desc: "☠️ <b>邏輯全錯了！</b><br>遇到盾牌卻在修復？壞掉卻在破解？請修正所有錯誤！",
+                targets: [{type: 'shield', status: 'shield'}, {type: 'server', status: 'broken'}],
+                blocks: [{type: 'call', text: '呼叫: 破解'}, {type: 'call', text: '呼叫: 修復'}],
+                preset: [
+                    {type: 'func', text: '函數: 修復', isContainer: true, children: [{type: 'action', text: '動作: 發射光束'}]},
+                    {type: 'func', text: '函數: 破解', isContainer: true, children: [{type: 'action', text: '動作: 破解光束'}]},
+                    {type: 'event', text: '按鈕 A', isContainer: true, children: [
+                        {type: 'loop', text: '重複 2 次', isContainer: true, children: [
+                             {type: 'logic', text: '如果 <盾牌> / 否則', isContainer: true, hasElse: true, children: [
+                                 {type: 'call', text: '呼叫: 修復'}, 
+                                 {type: 'call', text: '呼叫: 破解'}  
+                             ]}
+                        ]}
+                    ]}
+                ],
+                check: (ws) => {
+                    const slot1 = ws.querySelector('.block-logic .game-slot:nth-child(2)'); // If slot
+                    if(slot1 && slot1.innerText.includes('修復')) return {pass: false, msg: "遇到盾牌不能修復！"};
+                    return {pass: true, actions: [{type: 'hack', index: 0}, {type: 'fix', index: 1}]};
                 }
             }
         ];
@@ -627,195 +577,181 @@
         function initGame() {
             loadGameLevel(currentGameLevelIdx);
             
-            // Re-attach drop events to workspace
             const ws = document.getElementById('workspace');
             if(ws) {
                 ws.addEventListener('dragover', e => e.preventDefault());
-                ws.addEventListener('drop', handleGameDrop);
+                ws.addEventListener('drop', (e) => handleGameDrop(e, ws));
             }
         }
 
         function loadGameLevel(idx) {
-            playSound('click'); // 播放音效
+            playSound('click');
             currentGameLevelIdx = idx;
             const lvl = gameLevels[idx];
             
-            const lvlDisplay = document.getElementById('game-level-display');
-            if(lvlDisplay) lvlDisplay.innerText = lvl.title;
-            
-            const missionText = document.getElementById('mission-text');
-            if(missionText) missionText.innerHTML = lvl.desc;
-            
-            const msgBox = document.getElementById('game-msg-box');
-            if(msgBox) {
-                msgBox.innerText = "等待指令...";
-                msgBox.style.color = "#64748b";
-            }
-
-            const nextBtn = document.getElementById('btn-next-level');
-            if(nextBtn) nextBtn.style.display = 'none';
-
-            const runBtn = document.querySelector('.btn-run');
-            if(runBtn) runBtn.disabled = false;
+            document.getElementById('game-level-display').innerText = lvl.title;
+            document.getElementById('mission-text').innerHTML = lvl.desc;
+            document.getElementById('game-msg-box').innerText = "準備就緒";
+            document.getElementById('game-msg-box').style.color = "#64748b";
+            document.getElementById('btn-next-level').style.display = 'none';
+            document.querySelector('.btn-run').disabled = false;
 
             const toolbox = document.getElementById('toolbox');
-            if(toolbox) {
-                toolbox.innerHTML = '';
-                lvl.blocks.forEach(b => createGameBlock(b, toolbox));
-            }
+            toolbox.innerHTML = '';
+            lvl.blocks.forEach(b => createGameBlock(b, toolbox));
 
             const ws = document.getElementById('workspace');
-            if(ws) ws.innerHTML = '<div class="text-center text-slate-300 mt-10 pointer-events-none select-none text-sm">☟ 拖放積木到這裡組合程式</div>';
+            ws.innerHTML = '';
             
+            if(lvl.preset && lvl.preset.length > 0) {
+                lvl.preset.forEach(b => {
+                    const el = createGameBlock(b, null, true);
+                    ws.appendChild(el);
+                });
+            } else {
+                 ws.innerHTML = '<div id="empty-hint" class="text-center text-slate-300 mt-20 pointer-events-none select-none text-sm">☟ 拖放積木到這裡</div>';
+            }
+
             setupGameStage(lvl);
         }
 
         function setupGameStage(lvl) {
-            // Remove old targets
             document.querySelectorAll('.target-svg').forEach(e => e.remove());
             const canvas = document.getElementById('canvas');
-            const robot = document.getElementById('robot');
-            if(!canvas || !robot) return;
             
-            robot.style.left = '50px';
+            const canvasWidth = canvas.clientWidth || 400; 
+            const safeArea = canvasWidth - 100; 
             
+            let step = safeArea / lvl.targets.length;
+            if (step > 120) step = 120;
+            if (step < 70) step = 70;
+
             lvl.targets.forEach((t, i) => {
                 const div = document.createElement('div');
                 div.className = `sprite target-svg ${t.status}`;
                 div.innerHTML = gameSVGs[t.type] || gameSVGs.server;
-                div.style.left = (180 + i * 110) + 'px'; // Adjust spacing for smaller container
+                div.style.left = (80 + i * step) + 'px'; 
+                div.style.bottom = "60px";
                 div.dataset.index = i;
                 canvas.appendChild(div);
             });
+
+            const robot = document.getElementById('robot');
+            robot.style.left = "20px";
+            robot.style.top = "320px"; // Reset vertical pos
         }
 
-        function createGameBlock(data, container) {
+        function createGameBlock(data, container, returnEl = false) {
             const el = document.createElement('div');
             el.className = `game-block block-${data.type}`;
-            el.innerText = data.text;
             el.draggable = true;
+            el.dataset.json = JSON.stringify(data);
+
+            const header = document.createElement('div');
+            header.className = 'block-header';
+            header.innerText = data.text;
+            el.appendChild(header);
+
             el.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('json', JSON.stringify(data));
                 e.dataTransfer.effectAllowed = 'copy';
-                playSound('click'); // 播放音效
+                e.stopPropagation();
+                playSound('click');
             });
-            
-            // 修正巢狀容器的邏輯
-            if(data.isContainer) {
-                el.style.minWidth = "160px";
-                
-                const createSlot = () => {
-                    const slot = document.createElement('div'); 
-                    slot.className = 'game-slot';
-                    // 修正：事件監聽器正確地綁定在 slot 上
-                    slot.addEventListener('dragenter', ev => {
-                        ev.preventDefault(); 
-                        ev.stopPropagation();
-                        slot.classList.add('drag-over');
-                    });
-                    slot.addEventListener('dragleave', ev => {
-                        ev.preventDefault(); 
-                        ev.stopPropagation();
-                        slot.classList.remove('drag-over');
-                    });
-                    slot.addEventListener('dragover', ev => {
-                        ev.preventDefault(); 
-                        ev.stopPropagation();
-                    });
-                    slot.addEventListener('drop', (e) => {
-                        slot.classList.remove('drag-over');
-                        handleGameDrop(e);
-                    });
-                    return slot;
-                };
 
-                el.appendChild(createSlot());
+            el.addEventListener('dblclick', (e) => {
+                if(el.closest('#workspace')) {
+                    el.remove();
+                    playSound('click');
+                    e.stopPropagation();
+                    if(document.getElementById('workspace').children.length === 0) {
+                         document.getElementById('workspace').innerHTML = '<div id="empty-hint" class="text-center text-slate-300 mt-20 pointer-events-none select-none text-sm">☟ 拖放積木到這裡</div>';
+                    }
+                }
+            });
+
+            if(data.isContainer) {
+                const slot = createSlot();
+                el.appendChild(slot);
+                
+                if(data.children) {
+                    data.children.forEach(child => {
+                        const childEl = createGameBlock(child, null, true);
+                        slot.appendChild(childEl);
+                    });
+                }
 
                 if(data.hasElse) {
-                    const div = document.createElement('div'); div.innerText = "否則"; 
-                    div.style.padding = "2px 8px"; div.style.fontSize = "12px"; div.style.opacity = "0.8";
-                    el.appendChild(div);
-                    el.appendChild(createSlot());
+                    const elseText = document.createElement('div');
+                    elseText.innerText = "否則";
+                    elseText.className = "text-xs opacity-80 px-1 mt-1 font-normal";
+                    el.appendChild(elseText);
+                    const slot2 = createSlot();
+                    el.appendChild(slot2);
+                    
+                    if(data.children && data.children[1]) {
+                        const childEl = createGameBlock(data.children[1], null, true);
+                        slot2.appendChild(childEl);
+                    }
                 }
             }
-            
-            container.appendChild(el);
+
+            if(returnEl) return el;
+            if(container) container.appendChild(el);
         }
 
-        function handleGameDrop(e) {
+        function createSlot() {
+            const slot = document.createElement('div');
+            slot.className = 'game-slot';
+            slot.addEventListener('dragover', e => { 
+                if(!slot.closest('#workspace')) return; 
+                e.preventDefault(); e.stopPropagation(); 
+                slot.classList.add('drag-over'); 
+            });
+            slot.addEventListener('dragleave', e => { 
+                e.preventDefault(); e.stopPropagation(); 
+                slot.classList.remove('drag-over'); 
+            });
+            slot.addEventListener('drop', e => handleGameDrop(e, slot));
+            return slot;
+        }
+
+        function handleGameDrop(e, targetContainer) {
             e.preventDefault(); e.stopPropagation();
-            playSound('click'); // 播放音效
+            targetContainer.classList.remove('drag-over');
             
-            const dataStr = e.dataTransfer.getData('json');
-            if(!dataStr) return;
-            const data = JSON.parse(dataStr);
-            let target = e.target;
-            
-            // Find valid drop target
-            let slot = target.classList.contains('game-slot') ? target : target.closest('.game-slot');
-            const ws = document.getElementById('workspace');
-            let container = slot || ws;
-            
-            if(ws.innerText.includes('拖放積木')) ws.innerHTML = '';
+            if(!targetContainer.closest('#workspace')) return;
 
-            // 重新建立積木 DOM (因為要放在新位置)
-            // 這裡直接呼叫 createGameBlock 的簡化版邏輯來產生 DOM
-            const newBlock = document.createElement('div');
-            newBlock.className = `game-block block-${data.type}`;
-            newBlock.innerText = data.text;
-            newBlock.ondblclick = (e) => { e.stopPropagation(); newBlock.remove(); playSound('click'); };
+            playSound('click');
 
-            if(data.isContainer) {
-                newBlock.style.minWidth = "160px";
-                const createSlot = () => {
-                    const slot = document.createElement('div'); 
-                    slot.className = 'game-slot';
-                    slot.addEventListener('dragenter', ev => {
-                        ev.preventDefault(); ev.stopPropagation(); slot.classList.add('drag-over');
-                    });
-                    slot.addEventListener('dragleave', ev => {
-                        ev.preventDefault(); ev.stopPropagation(); slot.classList.remove('drag-over');
-                    });
-                    slot.addEventListener('dragover', ev => {
-                        ev.preventDefault(); ev.stopPropagation();
-                    });
-                    slot.addEventListener('drop', (ev) => {
-                        slot.classList.remove('drag-over');
-                        handleGameDrop(ev);
-                    });
-                    return slot;
-                };
+            const json = e.dataTransfer.getData('json');
+            if(!json) return;
+            const data = JSON.parse(json);
 
-                newBlock.appendChild(createSlot());
+            const hint = document.getElementById('empty-hint');
+            if(hint) hint.remove();
 
-                if(data.hasElse) {
-                    const div = document.createElement('div'); div.innerText = "否則"; 
-                    div.style.padding = "2px 8px"; div.style.fontSize = "12px"; div.style.opacity = "0.8";
-                    newBlock.appendChild(div);
-                    newBlock.appendChild(createSlot());
-                }
-            }
-
-            container.appendChild(newBlock);
+            const newBlock = createGameBlock(data, null, true);
+            targetContainer.appendChild(newBlock);
         }
 
         async function runGameCode() {
-            playSound('click'); // 播放音效
+            playSound('click');
             const lvl = gameLevels[currentGameLevelIdx];
             const ws = document.getElementById('workspace');
             const res = lvl.check(ws);
             const msg = document.getElementById('game-msg-box');
 
             if(!res.pass) {
-                playSound('fail'); // 播放失敗音效
+                playSound('fail');
                 msg.innerText = "❌ " + res.msg;
-                msg.style.color = "#d32f2f";
+                msg.style.color = "#ef4444";
                 ws.animate([{transform: 'translateX(0)'}, {transform: 'translateX(-5px)'}, {transform: 'translateX(5px)'}, {transform: 'translateX(0)'}], {duration: 300});
                 return;
             }
 
             msg.innerText = "⚡ 執行中...";
-            msg.style.color = "#00c853";
+            msg.style.color = "#22c55e";
             document.querySelector('.btn-run').disabled = true;
             await executeGameActions(res.actions);
         }
@@ -824,82 +760,76 @@
             const robot = document.getElementById('robot');
             const beam = document.getElementById('beam');
             const canvas = document.getElementById('canvas');
-            const msg = document.getElementById('game-msg-box');
-
+            
             for(let action of actions) {
                 const targetEl = document.querySelector(`.target-svg[data-index='${action.index}']`);
                 if(!targetEl) continue;
 
-                // Move robot close to target
-                const targetX = targetEl.offsetLeft;
-                robot.style.left = (targetX - 80) + 'px';
-                await wait(600);
+                const targetX = targetEl.offsetLeft - 30; 
+                robot.style.left = targetX + 'px';
+                await wait(800);
 
                 if(action.type === 'fix' || action.type === 'hack') {
-                    playSound('laser'); // 播放雷射音效
-                    const startX = robot.offsetLeft + 60;
-                    const endX = targetEl.offsetLeft + 30;
+                    playSound('laser');
                     
+                    const robotRect = robot.getBoundingClientRect();
+                    const targetRect = targetEl.getBoundingClientRect();
+                    const canvasRect = canvas.getBoundingClientRect();
+
+                    const startX = (robotRect.left - canvasRect.left) + (robotRect.width / 2) + 10;
+                    const startY = (robotRect.top - canvasRect.top) + (robotRect.height / 2);
+                    
+                    const endX = (targetRect.left - canvasRect.left) + (targetRect.width / 2);
+                    const endY = (targetRect.top - canvasRect.top) + (targetRect.height / 2);
+
                     beam.style.left = startX + 'px';
-                    beam.style.top = (robot.offsetTop + 35) + 'px';
-                    beam.style.width = (endX - startX) + 'px';
-                    beam.style.background = action.type === 'hack' ? '#ff9100' : '#00e676';
-                    beam.style.boxShadow = action.type === 'hack' ? '0 0 15px #ff9100' : '0 0 15px #00e676';
+                    beam.style.top = startY + 'px';
+                    
+                    const width = Math.hypot(endX - startX, endY - startY);
+                    const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
+
+                    beam.style.width = width + 'px';
+                    beam.style.transform = `rotate(${angle}deg)`;
+                    
+                    const color = action.type === 'hack' ? '#f59e0b' : '#22c55e';
+                    beam.style.background = color;
+                    beam.style.boxShadow = `0 0 10px ${color}`;
                     beam.style.opacity = 1;
 
-                    canvas.classList.add('shake');
-                    spawnParticles(endX, targetEl.offsetTop + 30, action.type === 'hack' ? '#ff9100' : '#00e676');
+                    targetEl.classList.add('shake');
                     await wait(500);
-                    
-                    beam.style.opacity = 0;
-                    canvas.classList.remove('shake');
-                    targetEl.className = 'sprite target-svg fixed';
-                    if(action.type === 'hack') targetEl.style.opacity = 0.5;
 
-                } else if (action.type === 'scan') {
-                    robot.style.filter = "drop-shadow(0 0 10px #2979ff)";
+                    beam.style.opacity = 0;
+                    targetEl.classList.remove('shake');
+                    
+                    if(action.type === 'fix') {
+                        targetEl.classList.remove('broken');
+                        targetEl.classList.add('fixed');
+                    }
+                    if(action.type === 'hack') {
+                        targetEl.style.opacity = 0.3;
+                    }
+
+                } else if(action.type === 'scan') {
+                    robot.style.filter = "brightness(1.5) drop-shadow(0 0 10px blue)";
                     await wait(300);
                     robot.style.filter = "none";
                 }
-                await wait(300);
+                await wait(400);
             }
 
-            playSound('success'); // 播放成功音效
-            msg.innerText = "🏆 任務完成！";
-            msg.style.color = "#00c853";
+            playSound('success');
+            document.getElementById('game-msg-box').innerText = "🏆 任務完成！";
             document.getElementById('btn-next-level').style.display = 'flex';
         }
 
-        function spawnParticles(x, y, color) {
-            const canvas = document.getElementById('canvas');
-            for(let i=0; i<8; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.style.background = color;
-                p.style.left = x + 'px'; p.style.top = y + 'px';
-                canvas.appendChild(p);
-                const angle = Math.random() * 6.28;
-                const dist = Math.random() * 40 + 10;
-                p.animate([{transform: 'translate(0,0) scale(1)', opacity: 1}, {transform: `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px) scale(0)`, opacity: 0}], {duration: 600}).onfinish = () => p.remove();
-            }
-        }
-        
         function nextGameLevel() {
-            playSound('click'); // 播放音效
             if(currentGameLevelIdx < gameLevels.length - 1) loadGameLevel(currentGameLevelIdx + 1);
-            else {
-                const msg = document.getElementById('game-msg-box');
-                msg.innerText = "🎉 恭喜！你已完成所有邏輯工程師訓練！";
-                msg.style.color = "#d946ef";
-                playSound('success');
-            }
+            else alert("恭喜通關！你是邏輯大師！");
         }
-        
         function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-        // Start
         window.onload = init;
-
     </script>
 </body>
 </html>
